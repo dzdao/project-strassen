@@ -1,7 +1,6 @@
 import scala.util.Random
-import akka.actor._
 
-object Strassen {
+object MultiplySerial {
 
   def naiveMultiply(a: Array[Array[Int]], b: Array[Array[Int]]): Array[Array[Int]] = {
     val result = Array.ofDim[Int](a.length, b.length)
@@ -42,6 +41,7 @@ object Strassen {
 
   def main(args: Array[String]): Unit = {
 
+    // set the matrix dimension
     val dim = 2
 
     val a = generateMatrix(dim)
@@ -52,8 +52,10 @@ object Strassen {
     printMatrix(b)
     println()
 
+    // resultant matrix
     val c = naiveMultiply(a, b)
     printMatrix(c)
+
   }
 }
 
