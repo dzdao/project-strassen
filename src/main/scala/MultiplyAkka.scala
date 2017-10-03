@@ -1,6 +1,32 @@
-import akka.actor._
+import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import scala.io.StdIn
 import scala.util.Random
+
+// worker companion object
+object Worker {
+  def props(message: Int, listenerActor: ActorRef)
+  : Props = Props(new Worker(message, listenerActor))
+
+  final case class WhatToMultiply(matrix: Array[Int])
+  case object ExecuteMultiply
+}
+
+// worker actor
+class Worker(message: Int, listenerActor: ActorRef) extends Actor {
+  import Worker._
+
+  var workerMatrix = Array[Int]()
+
+  def receive = {
+    case WhatToMultiply(matrix) =>
+      workerMatrix = matrix
+    case ExecuteMultiply =>
+      for (i <- 0 until workerMatrix.length) {
+        println(workerMatrix(i))
+      }
+  }
+}
+
 
 object MultiplyAkka extends App {
 
