@@ -1,4 +1,5 @@
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+//import akka.routing.RoundRobin
 import scala.io.StdIn
 import scala.util.Random
 
@@ -23,9 +24,9 @@ class Worker(message: Int, listenerActor: ActorRef) extends Actor {
       workerMatrix = matrix
     case ExecuteMultiply =>
       for (i <- 0 until workerMatrix.length) {
-        println(workerMatrix(i))
+        print(workerMatrix(i) + " ")
       }
-
+      println()
       listenerActor ! DoneMsg(s"Worker #$message is done")
   }
 }
@@ -48,7 +49,10 @@ class Listener extends Actor {
   }
 }
 
+/** main class */
 object MultiplyAkka extends App {
+  import Worker._
+  import scala.collection.mutable.Map
 
   def generateMatrix(dim: Int): Array[Array[Int]] = {
     val rand = Random
@@ -70,7 +74,7 @@ object MultiplyAkka extends App {
   }
 
   // set the matrix dimension
-  val dim = 2
+  val dim = 4
   val a = generateMatrix(dim)
   val b = generateMatrix(dim)
 
@@ -82,9 +86,19 @@ object MultiplyAkka extends App {
   val system: ActorSystem = ActorSystem("MultiplyAkka")
 
   try {
+    val numOfActors = a.length
+    var actorRefs = Map[Int, ActorRef]()
+    val listener: ActorRef = system.actorOf(Listener.props, "ListenerActor")
 
+    for(row <- 0 until numOfActors) {
 
+      // map row key -> reference to specific worker
+      actorRefs += (row -> system.actorOf(Worker.props(row, listener), s"Worker-$row"))
 
+      // send matrix row and a trigger message to start the task
+      actorRefs(row) ! WhatToMultiply(a(row))
+      actorRefs(row) ! ExecuteMultiply
+    }
 
     println("Press enter to terminate program")
     StdIn.readLine()
