@@ -8,7 +8,7 @@ object Worker {
   def props(message: Int, listenerActor: ActorRef)
   : Props = Props(new Worker(message, listenerActor))
 
-  final case class WhatToMultiply(matrix: Array[Int])
+  final case class WhatToMultiply(matrixA: Array[Int], matrixB: Array[Array[Int]])
   case object ExecuteMultiply
 }
 
@@ -17,17 +17,29 @@ class Worker(message: Int, listenerActor: ActorRef) extends Actor {
   import Worker._
   import Listener._
 
-  var workerMatrix = Array[Int]()
+  var a = Array[Int]()
+  var b = Array[Array[Int]]()
+  var result = Array[Int]()
 
   def receive = {
-    case WhatToMultiply(matrix) =>
-      workerMatrix = matrix
+    case WhatToMultiply(matrixA, matrixB) =>
+      a = matrixA
+      b = matrixB
+      result = Array.ofDim[Int](a.length)
+
     case ExecuteMultiply =>
-      for (i <- 0 until workerMatrix.length) {
-        print(workerMatrix(i) + " ")
+      for (i <- 0 until a.length) {
+        var temp = 0
+        for (j <- 0 until b.length) {
+
+          temp += a(i) * b(i)(j)
+        }
+        result(i) = temp
       }
-      println()
+
       listenerActor ! DoneMsg(s"Worker #$message is done")
+      listenerActor ! CompletedWork(message, result)
+
   }
 }
 
@@ -35,6 +47,7 @@ class Worker(message: Int, listenerActor: ActorRef) extends Actor {
 object Listener {
   def props: Props = Props[Listener]
   final case class DoneMsg(message: String)
+  final case class CompletedWork(row: Int, work: Array[Int])
 }
 
 /** listener actor */
@@ -45,7 +58,8 @@ class Listener extends Actor {
 
   def receive = {
     case DoneMsg(message) => println(message)
-
+    case CompletedWork(row, work) =>
+      result(row) = work
   }
 }
 
@@ -74,7 +88,7 @@ object MultiplyAkka extends App {
   }
 
   // set the matrix dimension
-  val dim = 4
+  val dim = 10
   val a = generateMatrix(dim)
   val b = generateMatrix(dim)
 
@@ -82,21 +96,24 @@ object MultiplyAkka extends App {
   val c = Array.ofDim[Int](dim, dim)
 
 
-  // create the container to hold actors
+  // create the container to hold all the actors
   val system: ActorSystem = ActorSystem("MultiplyAkka")
 
   try {
     val numOfActors = a.length
     var actorRefs = Map[Int, ActorRef]()
+
+    // listener actor will receive messages from all worker actors
     val listener: ActorRef = system.actorOf(Listener.props, "ListenerActor")
 
+    // generate worker actors
     for(row <- 0 until numOfActors) {
 
       // map row key -> reference to specific worker
       actorRefs += (row -> system.actorOf(Worker.props(row, listener), s"Worker-$row"))
 
-      // send matrix row and a trigger message to start the task
-      actorRefs(row) ! WhatToMultiply(a(row))
+      // distribute workload and send a trigger message to start
+      actorRefs(row) ! WhatToMultiply(a(row), b)
       actorRefs(row) ! ExecuteMultiply
     }
 
