@@ -1,4 +1,5 @@
 import scala.util.Random
+import scala.concurrent.duration._
 
 object MultiplySerial {
 
@@ -40,17 +41,17 @@ object MultiplySerial {
   }
 
   def time[R](block: => R): R = {
-    val t0 = System.currentTimeMillis()
+    val t0 = System.currentTimeMillis
     val result = block
-    val t1 = System.currentTimeMillis()
-    println("Elapsed time: " + (t1 - t0) + "ms")
+    val t1 = System.currentTimeMillis
+    println("Elapsed time: " + (t1 - t0).millis)
     result
   }
 
   def main(args: Array[String]): Unit = {
 
     // set the matrix dimension
-    val dim = 2000
+    val dim = 1000
 
     val a = generateMatrix(dim)
     //printMatrix(a)
