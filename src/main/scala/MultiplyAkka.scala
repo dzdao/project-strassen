@@ -16,7 +16,7 @@ object Worker {
 class Worker(message: Int, listenerActor: ActorRef) extends Actor {
   import Worker._
   import Listener._
-
+  var workerID = message
   var a = Array[Int]()
   var b = Array[Array[Int]]()
   var result = Array[Int]()
@@ -32,12 +32,13 @@ class Worker(message: Int, listenerActor: ActorRef) extends Actor {
         var temp = 0
         for (j <- 0 until b.length) {
 
-          temp += a(i) * b(i)(j)
+          temp += a(j) * b(j)(i)
         }
+        //println(temp)
         result(i) = temp
       }
 
-      listenerActor ! DoneMsg(s"Worker #$message is done")
+      listenerActor ! DoneMsg(s"Worker #$workerID is done")
       listenerActor ! CompletedWork(message, result)
 
   }
@@ -45,21 +46,30 @@ class Worker(message: Int, listenerActor: ActorRef) extends Actor {
 
 /** listener companion object */
 object Listener {
-  def props: Props = Props[Listener]
+  def props(message: Int): Props = Props(new Listener(message))
   final case class DoneMsg(message: String)
   final case class CompletedWork(row: Int, work: Array[Int])
 }
 
 /** listener actor */
-class Listener extends Actor {
+class Listener(message: Int) extends Actor {
   import Listener._
 
-  var result = Array[Array[Int]]()
+  var resultMatrix = Array.ofDim[Array[Int]](message)
+  var numOfRows = 0
 
   def receive = {
     case DoneMsg(message) => println(message)
     case CompletedWork(row, work) =>
-      result(row) = work
+      resultMatrix(row) = work
+      numOfRows += 1
+      if(numOfRows == resultMatrix.length) {
+        for {
+          i <- 0 until resultMatrix.length
+          j <- 0 until resultMatrix.length
+        } print(s"${resultMatrix(i)(j)} ")
+        println("DONE")
+      }
   }
 }
 
@@ -104,7 +114,7 @@ object MultiplyAkka extends App {
     var actorRefs = Map[Int, ActorRef]()
 
     // listener actor will receive messages from all worker actors
-    val listener: ActorRef = system.actorOf(Listener.props, "ListenerActor")
+    val listener: ActorRef = system.actorOf(Listener.props(a.length), "ListenerActor")
 
     // generate worker actors
     for(row <- 0 until numOfActors) {
