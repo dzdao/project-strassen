@@ -39,23 +39,33 @@ object MultiplySerial {
     } println(s"($i)($j) = ${matrix(i)(j)}")
   }
 
+  def time[R](block: => R): R = {
+    val t0 = System.currentTimeMillis()
+    val result = block
+    val t1 = System.currentTimeMillis()
+    println("Elapsed time: " + (t1 - t0) + "ms")
+    result
+  }
+
   def main(args: Array[String]): Unit = {
 
     // set the matrix dimension
-    val dim = 2
+    val dim = 2000
 
     val a = generateMatrix(dim)
-    printMatrix(a)
-    println()
+    //printMatrix(a)
+    //println()
 
     val b = generateMatrix(dim)
-    printMatrix(b)
-    println()
+    //printMatrix(b)
+    //println()
 
     // resultant matrix
-    val c = naiveMultiply(a, b)
-    printMatrix(c)
-
+    time {
+      val c = naiveMultiply(a, b)
+    }
+    //printMatrix(c)
+    println("DONE")
   }
 }
 
