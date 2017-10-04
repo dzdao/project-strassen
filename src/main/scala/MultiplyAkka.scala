@@ -1,5 +1,5 @@
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-//import akka.routing.RoundRobin
+import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.util.Random
 
@@ -55,20 +55,23 @@ object Listener {
 class Listener(message: Int) extends Actor {
   import Listener._
 
+  val startTime: Long = System.currentTimeMillis
   var resultMatrix = Array.ofDim[Array[Int]](message)
   var numOfRows = 0
 
   def receive = {
-    case DoneMsg(message) => println(message)
+    //case DoneMsg(message) => println(message)
     case CompletedWork(row, work) =>
       resultMatrix(row) = work
       numOfRows += 1
       if(numOfRows == resultMatrix.length) {
-        for {
-          i <- 0 until resultMatrix.length
-          j <- 0 until resultMatrix.length
-        } print(s"${resultMatrix(i)(j)} ")
-        println("DONE")
+        println("All workers done. Calculation time: %s"
+          .format((System.currentTimeMillis - startTime).millis))
+
+//        for {
+//          i <- 0 until resultMatrix.length
+//          j <- 0 until resultMatrix.length
+//        } print(s"${resultMatrix(i)(j)}\n")
       }
   }
 }
@@ -98,7 +101,7 @@ object MultiplyAkka extends App {
   }
 
   // set the matrix dimension
-  val dim = 10
+  val dim = 3000
   val a = generateMatrix(dim)
   val b = generateMatrix(dim)
 
