@@ -1,8 +1,3 @@
-import sbtassembly.Plugin._
-import sbtassembly.Plugin.AssemblyKeys._
-
-assemblySettings
-
 name := "project-strassen"
 
 version := "0.1"
@@ -20,4 +15,6 @@ libraryDependencies ++= Seq(
 	"ch.qos.logback" % "logback-classic" % "1.2.3" % "runtime"
 	)
 	
-jarName in assembly := "project-strassen-ec2.jar"
+assemblyJarName in assembly := "project-strassen-ec2.jar"
+
+mainClass in assembly := Some("MultiplyAkka")
